@@ -302,6 +302,12 @@ impl ChessPiece {
         potential_moves
     }
 
+    fn queen_moves(&self, position: Position, board: &ChessBoard) -> Vec<Position> {
+        let mut moves = self.bishop_moves(position, board);
+        moves.append(&mut self.rook_moves(position, board));
+        moves
+    }
+
     // Helper method to collect potential moves in a specific direction
     fn collect_potential_bishop_moves(
         &self,
@@ -393,6 +399,7 @@ impl Moves for ChessPiece {
             PieceType::Pawn => self.pawn_moves(position, board, previous_move),
             PieceType::Rook => self.rook_moves(position, board),
             PieceType::Bishop => self.bishop_moves(position, board),
+            PieceType::Queen => self.queen_moves(position, board),
             _ => vec![],
         }
     }
@@ -771,5 +778,35 @@ mod tests {
         let moves = black_bishop.possible_moves(position, &board, None);
         println!("{:?}", moves);
         assert_eq!(moves.len(), 6);
+    }
+
+    #[test]
+    fn test_queen_moves() {
+        let board = ChessBoard::from_inverted_array([
+            [B_RK, B_KT, B_BP, None, B_KG, B_BP, B_KT, B_RK],
+            [B_PN, B_PN, None, B_PN, B_PN, B_PN, B_PN, B_PN],
+            [None, None, B_PN, None, None, None, None, None],
+            [None, None, None, None, None, None, None, None],
+            [None, B_QN, None, None, None, None, None, None],
+            [None, None, None, None, W_PN, None, None, None],
+            [W_PN, W_PN, W_PN, W_PN, None, W_PN, W_PN, W_PN],
+            [W_RK, W_KT, W_BP, W_QN, W_KG, W_BP, W_KT, W_RK],
+        ]);
+
+        let position = Position::new(D, One);
+        let white_queen = board.at(&position).unwrap();
+        let moves = white_queen.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 4);
+        assert!(moves.contains(&Position::new(E, Two)));
+        assert!(moves.contains(&Position::new(F, Three)));
+        assert!(moves.contains(&Position::new(G, Four)));
+        assert!(moves.contains(&Position::new(H, Five)));
+
+        let position = Position::new(B, Four);
+        let black_queen = board.at(&position).unwrap();
+        let moves = black_queen.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 17);
     }
 }

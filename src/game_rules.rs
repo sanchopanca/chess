@@ -308,6 +308,36 @@ impl ChessPiece {
         moves
     }
 
+    fn knight_moves(&self, position: Position, board: &ChessBoard) -> Vec<Position> {
+        let mut potential_moves = vec![];
+
+        // Iterate through all possible knight move offsets.
+        for file_offset in [-2i32, -1, 1, 2] {
+            for rank_offset in [-2i32, -1, 1, 2] {
+                // Ensure we're moving in an "L" shape (one direction should move 2 squares, the other 1).
+                if file_offset.abs() + rank_offset.abs() == 3 {
+                    if let Some(potential_position) =
+                        position.add_file_and_rank(file_offset, rank_offset)
+                    {
+                        match board.at(&potential_position) {
+                            Some(piece) if piece.color != self.color => {
+                                // If the piece at the potential position is of different color, add the position to potential moves.
+                                potential_moves.push(potential_position);
+                            }
+                            None => {
+                                // If there's no piece at the potential position, add it to potential moves.
+                                potential_moves.push(potential_position);
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+
+        potential_moves
+    }
+
     // Helper method to collect potential moves in a specific direction
     fn collect_potential_bishop_moves(
         &self,
@@ -400,6 +430,7 @@ impl Moves for ChessPiece {
             PieceType::Rook => self.rook_moves(position, board),
             PieceType::Bishop => self.bishop_moves(position, board),
             PieceType::Queen => self.queen_moves(position, board),
+            PieceType::Knight => self.knight_moves(position, board),
             _ => vec![],
         }
     }
@@ -808,5 +839,45 @@ mod tests {
         let moves = black_queen.possible_moves(position, &board, None);
         println!("{:?}", moves);
         assert_eq!(moves.len(), 17);
+    }
+
+    #[test]
+    fn test_knight_moves() {
+        let board = ChessBoard::from_inverted_array([
+            [B_RK, None, B_BP, None, B_KG, B_BP, B_KT, B_RK],
+            [B_PN, B_PN, B_PN, B_PN, B_QN, None, B_PN, None],
+            [None, None, None, None, None, B_PN, None, B_PN],
+            [None, None, None, None, None, None, None, None],
+            [None, None, B_KT, None, None, B_PN, None, None],
+            [None, None, None, None, None, W_KT, None, None],
+            [W_PN, W_PN, W_PN, W_PN, W_PN, W_PN, W_PN, W_PN],
+            [W_RK, W_KT, W_BP, W_QN, W_KG, W_BP, None, W_RK],
+        ]);
+
+        let position = Position::new(B, One);
+        let white_knight = board.at(&position).unwrap();
+        let moves = white_knight.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 2);
+        assert!(moves.contains(&Position::new(A, Three)));
+        assert!(moves.contains(&Position::new(C, Three)));
+
+        let position = Position::new(F, Three);
+        let white_knight = board.at(&position).unwrap();
+        let moves = white_knight.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 5);
+
+        let position = Position::new(C, Four);
+        let black_knight = board.at(&position).unwrap();
+        let moves = black_knight.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 8);
+
+        let position = Position::new(G, Eight);
+        let black_knight = board.at(&position).unwrap();
+        let moves = black_knight.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 0);
     }
 }

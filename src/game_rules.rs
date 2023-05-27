@@ -263,6 +263,61 @@ impl ChessPiece {
         potential_moves.append(&mut potential_captures);
         potential_moves
     }
+
+    fn rook_moves(&self, position: Position, board: &ChessBoard) -> Vec<Position> {
+        let mut potential_moves = vec![];
+
+        // Iterate through both the file and rank directions.
+        for direction in ["file", "rank"].iter() {
+            for direction_value in [-1, 1].iter() {
+                self.collect_potential_moves(
+                    direction,
+                    *direction_value,
+                    &position,
+                    board,
+                    &mut potential_moves,
+                );
+            }
+        }
+
+        potential_moves
+    }
+
+    // Helper method to collect potential moves in a specific direction
+    fn collect_potential_moves(
+        &self,
+        direction: &str,
+        direction_value: i32,
+        position: &Position,
+        board: &ChessBoard,
+        potential_moves: &mut Vec<Position>,
+    ) {
+        let mut i = 1;
+
+        // Traverse until the edge of the board or until a piece is encountered.
+        while let Some(potential_position) = match direction {
+            "file" => position.add_file(direction_value * i),
+            "rank" => position.add_rank(direction_value * i),
+            _ => None,
+        } {
+            match board.at(&potential_position) {
+                Some(piece) if piece.color != self.color => {
+                    // If the piece at the potential position is of different color, add the position to potential moves.
+                    potential_moves.push(potential_position);
+                    break;
+                }
+                Some(_) => {
+                    // If the piece is of same color, stop traversing in this direction.
+                    break;
+                }
+                None => {
+                    // If there's no piece at the potential position, add it to potential moves.
+                    potential_moves.push(potential_position);
+                }
+            }
+            i += 1;
+        }
+    }
 }
 
 pub trait Moves {
@@ -283,6 +338,7 @@ impl Moves for ChessPiece {
     ) -> Vec<Position> {
         match self.piece_type {
             PieceType::Pawn => self.pawn_moves(position, board, previous_move),
+            PieceType::Rook => self.rook_moves(position, board),
             _ => vec![],
         }
     }
@@ -575,5 +631,47 @@ mod tests {
         let moves = black_pawn.possible_moves(position, &board, Some(previous_move));
         println!("{:?}", moves);
         assert_eq!(moves.len(), 0);
+    }
+
+    #[test]
+    fn test_regular_rook_moves() {
+        let board = ChessBoard::from_inverted_array([
+            [None, B_KT, B_BP, B_QN, B_KG, B_BP, None, B_RK],
+            [None, B_PN, B_PN, B_PN, B_PN, B_PN, B_PN, None],
+            [None, None, None, None, None, None, None, None],
+            [B_PN, W_KT, None, B_RK, None, None, None, B_PN],
+            [W_PN, W_RK, None, None, B_KT, None, None, None],
+            [None, None, None, B_RK, None, None, None, None],
+            [None, W_PN, W_PN, W_PN, W_PN, W_PN, W_PN, W_PN],
+            [None, None, W_BP, W_QN, W_KG, W_BP, W_KT, W_RK],
+        ]);
+
+        let position = Position::new(B, Four);
+        let white_rook = board.at(&position).unwrap();
+        let moves = white_rook.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 4);
+        assert!(moves.contains(&Position::new(B, Three)));
+        assert!(moves.contains(&Position::new(C, Four)));
+        assert!(moves.contains(&Position::new(D, Four)));
+        assert!(moves.contains(&Position::new(E, Four)));
+
+        let position = Position::new(H, One);
+        let white_rook = board.at(&position).unwrap();
+        let moves = white_rook.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 0);
+
+        let position = Position::new(D, Five);
+        let black_rook = board.at(&position).unwrap();
+        let moves = black_rook.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 7);
+
+        let position = Position::new(H, Eight);
+        let black_rook = board.at(&position).unwrap();
+        let moves = black_rook.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 3);
     }
 }

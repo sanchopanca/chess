@@ -270,7 +270,7 @@ impl ChessPiece {
         // Iterate through both the file and rank directions.
         for direction in ["file", "rank"].iter() {
             for direction_value in [-1, 1].iter() {
-                self.collect_potential_moves(
+                self.collect_potential_rook_moves(
                     direction,
                     *direction_value,
                     &position,
@@ -283,8 +283,61 @@ impl ChessPiece {
         potential_moves
     }
 
+    fn bishop_moves(&self, position: Position, board: &ChessBoard) -> Vec<Position> {
+        let mut potential_moves = vec![];
+
+        // Iterate through all four diagonal directions.
+        for file_direction in [-1, 1].iter() {
+            for rank_direction in [-1, 1].iter() {
+                self.collect_potential_bishop_moves(
+                    *file_direction,
+                    *rank_direction,
+                    &position,
+                    board,
+                    &mut potential_moves,
+                );
+            }
+        }
+
+        potential_moves
+    }
+
     // Helper method to collect potential moves in a specific direction
-    fn collect_potential_moves(
+    fn collect_potential_bishop_moves(
+        &self,
+        file_direction: i32,
+        rank_direction: i32,
+        position: &Position,
+        board: &ChessBoard,
+        potential_moves: &mut Vec<Position>,
+    ) {
+        let mut i = 1;
+
+        // Traverse until the edge of the board or until a piece is encountered.
+        while let Some(potential_position) =
+            position.add_file_and_rank(file_direction * i, rank_direction * i)
+        {
+            match board.at(&potential_position) {
+                Some(piece) if piece.color != self.color => {
+                    // If the piece at the potential position is of different color, add the position to potential moves.
+                    potential_moves.push(potential_position);
+                    break;
+                }
+                Some(_) => {
+                    // If the piece is of same color, stop traversing in this direction.
+                    break;
+                }
+                None => {
+                    // If there's no piece at the potential position, add it to potential moves.
+                    potential_moves.push(potential_position);
+                }
+            }
+            i += 1;
+        }
+    }
+
+    // Helper method to collect potential moves in a specific direction
+    fn collect_potential_rook_moves(
         &self,
         direction: &str,
         direction_value: i32,
@@ -339,6 +392,7 @@ impl Moves for ChessPiece {
         match self.piece_type {
             PieceType::Pawn => self.pawn_moves(position, board, previous_move),
             PieceType::Rook => self.rook_moves(position, board),
+            PieceType::Bishop => self.bishop_moves(position, board),
             _ => vec![],
         }
     }
@@ -673,5 +727,49 @@ mod tests {
         let moves = black_rook.possible_moves(position, &board, None);
         println!("{:?}", moves);
         assert_eq!(moves.len(), 3);
+    }
+
+    #[test]
+    fn test_bishop_moves() {
+        let board = ChessBoard::from_inverted_array([
+            [B_RK, B_KT, None, B_QN, B_KG, None, B_KT, B_RK],
+            [B_PN, B_PN, B_PN, B_PN, B_PN, B_PN, None, B_PN],
+            [None, None, None, None, None, None, B_PN, B_BP],
+            [None, None, None, None, None, None, None, None],
+            [None, None, W_PN, B_BP, W_PN, None, W_PN, None],
+            [None, None, None, None, None, None, None, None],
+            [W_PN, W_PN, None, W_PN, None, W_PN, None, W_PN],
+            [W_RK, W_KT, W_BP, W_QN, W_KG, W_BP, W_KT, W_RK],
+        ]);
+
+        let position = Position::new(C, One);
+        let white_bishop = board.at(&position).unwrap();
+        let moves = white_bishop.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 0);
+
+        let position = Position::new(F, One);
+        let white_bishop = board.at(&position).unwrap();
+        let moves = white_bishop.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 4);
+        assert!(moves.contains(&Position::new(E, Two)));
+        assert!(moves.contains(&Position::new(D, Three)));
+        assert!(moves.contains(&Position::new(G, Two)));
+        assert!(moves.contains(&Position::new(H, Three)));
+
+        let position = Position::new(D, Four);
+        let black_bishop = board.at(&position).unwrap();
+        let moves = black_bishop.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 9);
+        assert!(moves.contains(&Position::new(B, Two)));
+        assert!(moves.contains(&Position::new(F, Two)));
+
+        let position = Position::new(H, Six);
+        let black_bishop = board.at(&position).unwrap();
+        let moves = black_bishop.possible_moves(position, &board, None);
+        println!("{:?}", moves);
+        assert_eq!(moves.len(), 6);
     }
 }

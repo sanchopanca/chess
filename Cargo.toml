@@ -8,6 +8,13 @@ edition = "2021"
 [dependencies]
 bevy = "0.10.1"
 bevy_prototype_lyon = "0.8.0"
+bevy_svg = { version = "0.10.1", default-features = false, features = ["2d"] }
+# bevy_svg = { git = "https://github.com/sanchopanca/bevy_svg.git", default-features = false, features = [
+#     "2d",
+# ] }
+
+# [patch.crates-io]
+# usvg = { git = "https://github.com/RazrFalcon/resvg.git", package = "usvg" }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -16,4 +23,3 @@ opt-level = 1
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
-

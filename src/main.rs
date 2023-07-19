@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use bevy_svg::prelude::*;
 
 mod game_rules;
 
-const SQUARE_SIZE: f32 = 64.0 + 32.0;
+const SQUARE_SIZE: f32 = 64.0 + 64.0;
 const SCREEN_WIDTH: f32 = SQUARE_SIZE * 8.0;
 const SCREEN_HEIGHT: f32 = SCREEN_WIDTH;
 
@@ -49,6 +50,16 @@ fn board(mut commands: Commands) {
     }
 }
 
+fn figure(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let svg = asset_server.load("pieces/w_queen.svg");
+    commands.spawn(Svg2dBundle {
+        svg,
+        origin: Origin::BottomLeft, // Origin::TopLeft is the default
+        transform: Transform::from_xyz(0.0, 0.0, 1.0).with_scale(Vec3::splat(3.0)),
+        ..Default::default()
+    });
+}
+
 fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
@@ -60,6 +71,8 @@ fn main() {
             ..default()
         }))
         .add_plugin(ShapePlugin)
+        .add_plugin(SvgPlugin)
         .add_startup_system(board)
+        .add_startup_system(figure)
         .run();
 }
